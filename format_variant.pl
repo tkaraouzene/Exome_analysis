@@ -84,16 +84,15 @@ warnq info_mess."Seeking files to format..." unless $config->{quiet};
 my $vcf_dh = openDIR($config->{indir});
 
 while (my $in_file = readdir $vcf_dh) {
-    
-    next unless $in_file =~ /$config->{vcf_ext}$/;
 
-    (my $out_file = $in_file) =~ s/$config->{vcf_ext}$/_$config->{out_tail}\.csv/;
-    (my $err_file = $in_file) =~ s/$config->{vcf_ext}$/_$config->{out_tail}\.err/;
+    next unless $in_file =~ /$config->{vcf_ext}/;
+
+    (my $out_file = $in_file) =~ s/$config->{vcf_ext}.+$/_$config->{out_tail}\.csv/;
+    (my $err_file = $in_file) =~ s/$config->{vcf_ext}.+$/_$config->{out_tail}\.err/;
 
     push(@in_files, $config->{indir}."/".$in_file);
     push(@out_files, $config->{outdir}."/".$out_file);
-    push(@err_files, $config->{error}."/".$err_file);
-
+    push(@err_files, $config->{errordir}."/".$err_file);
 }
 
 closedir $vcf_dh;
@@ -144,6 +143,10 @@ foreach my $index (0..$#in_files) {
 	# 
 	##################
 	my ($chr,$pos,$rs,$ref,$alt,$info,$format,$other) = parse_vcf_line($_, 0..4, 7..9);
+
+	# parse info field
+	# retrieve ref to a hash table:
+	# all keys are a INFO key flag
 	my $info_table = parse_vcf_info($info);
 
 	my $format_table = fill_vcf_format($format, $other);
@@ -213,8 +216,6 @@ sub findAnnot {
 	(return @r);
 }
 
-
-
 sub configure {
 
     my $args = shift;    
@@ -226,7 +227,8 @@ sub configure {
     	'verbose|v',                # print out a bit more info while running
     	'quiet|q',                  # print nothing to STDERR
     	'outdir|o=s',               # output directory
-    	'indir|i=s',                  # output directory
+    	'errordir|e=s',
+	'indir|i=s',                  # input directory
 	'annot=s',                    # list of kept VEP annotation (default = all)
 	'vep=s',                      # variant_effect_predictor vcf key (default = "CSQ")
 
