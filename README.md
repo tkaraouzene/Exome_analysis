@@ -3,16 +3,19 @@
 
 ## 
 
-### format_variant.pl
+### format_variant.pl: 
 
+#### Description:
 
 The goal of this script is to format vcf files to a friendly readable csv files
 
-Usage:
-    perl format_variant.pl [arguments]
+#### Usage:
 
-Options
-=============
+```perl    
+perl format_variant.pl [arguments]
+```
+
+#### Options:
 
 ```perl
 --help                                   # Display complet usage and quit 
