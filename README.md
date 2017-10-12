@@ -36,4 +36,4 @@ Info : --indir has to be mentionned
 
 ## Directory:
 
-### script
+### script:
