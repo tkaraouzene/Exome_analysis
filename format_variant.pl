@@ -1,5 +1,16 @@
 #!/usr/bin/perl
 
+###########
+#
+# TODO:
+#
+########
+#
+# Un code mieux commenté
+# un version plus robuste de findAnnot
+# possibilité de créer un fichier / patient / chromosome
+#
+
 use lib 'script';
 
 use warnings;
@@ -20,6 +31,7 @@ use my_warnings qw(printq warnq dieq info_mess error_mess warn_mess);
 # csv files
 # 
 #######
+
 
 
 sub usage {
