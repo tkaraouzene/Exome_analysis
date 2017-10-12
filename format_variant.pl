@@ -18,7 +18,7 @@
 ###########
 #
 # Un code mieux commenté
-# un version plus robuste de findAnnot
+# un version plus robuste de find_annot
 # possibilité de créer un fichier / patient / chromosome
 #
 ###########
@@ -48,15 +48,25 @@ Basic options
 =============
 
 --help                                   # Display complet usage and quit 
--o | --outdir [dir]                      # Output directory 
+-o | --outdir [dir]                      # Output directory (created is doesn't exist)
 -i | --indir [dir]                       # Directory containing input VCF files 
+-e | --errordir [dir]                    # Directory containing error files (default = outdir/error, 
+                                         #                                   created is doesn't exist)
 --vep [VEP key]                          # default = "CSQ"
 --annot [annot1,annot2,...,annotN]       # list of kept VEP annotation (default = all) 
 --fork [num_forks]                       # Use forking to improve script runtime (default = 1)
+--verbose                                # print out a bit more info while running
+--quiet                                  # print nothing to STDERR
 
 Info : --indir has to be mentionned
        --outdir default = VCF/ (created if doesn\'t exist)
        --fork default = 1
+
+    	'errordir|e=s',
+	'indir|i=s',                  # input directory
+	'annot=s',                    # list of kept VEP annotation (default = all)
+	'vep=s',   
+
 
 END
 return $usage;
@@ -150,7 +160,7 @@ foreach my $index (0..$#in_files) {
 	my $info_table = parse_vcf_info($info);
 
 	my $format_table = fill_vcf_format($format, $other);
-	my $vep_info = &findAnnot($info_table, $config->{vep});
+	my $vep_info = &find_annot($info_table, @{$config->{vep}});
 	my $vep_infos = parse_vep_info($vep_info);
 	
 	my @format = sort(keys(%$format_table));
@@ -177,7 +187,7 @@ foreach my $index (0..$#in_files) {
 
 	    # return a hash table with key 
 	    my $vep_table = fill_vep_table($vi, $vep_format);	 
-	    my @vep_annot = &findAnnot($vep_table, @{$config->{annot}});
+	    my @vep_annot = &find_annot($vep_table, $config->{annot});
 	    
 	    say $out_fh join("\t", $chr, $pos, $ref, $alt, @vep_annot, @value);
 	}
@@ -199,7 +209,7 @@ warnq info_mess."All done";
 #
 ###########
 
-sub findAnnot {
+sub find_annot {
 
     my $table = shift;    
     my @annot_to_return = (@_) ? 
@@ -263,7 +273,7 @@ sub configure {
     
     # check error dir:
     $config->{errordir} ||= $config->{outdir}."/error";
-    dieq error_mess."Cannot mkdir $config->{errordir}: $!" unless -d $config->{errordir} || mkdir $config->{errordir};
+    dieq error_mess."Cannot mkdir $config->{errordir}: $!" unless -d $config->{errordir} || mkdir($config->{errordir});
 
     # check forking: 
     $config->{fork} = 1 unless $config->{fork};
