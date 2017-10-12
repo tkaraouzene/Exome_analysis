@@ -1,15 +1,27 @@
 #!/usr/bin/perl
 
+# date: 12th october 2017
+# author: Thomas Karaouzene
+
+###########
+#
+# The goal of this script is to format vcf files to a friendly readable 
+# csv files
+# 
+###########
+
+
 ###########
 #
 # TODO:
 #
-########
+###########
 #
 # Un code mieux commenté
 # un version plus robuste de findAnnot
 # possibilité de créer un fichier / patient / chromosome
 #
+###########
 
 use lib 'script';
 
@@ -24,15 +36,6 @@ use my_vcf_functions qw(fill_vcf_format skip_vcf_meta parse_vcf_line parse_vcf_i
 use my_vep_functions qw(parse_vep_info parse_vep_meta_line fill_vep_table);
 use my_file_manager qw(openDIR openIN openOUT close_files);
 use my_warnings qw(printq warnq dieq info_mess error_mess warn_mess);
-
-#######
-#
-# The goal of this script is to format vcf files to a friendly readable 
-# csv files
-# 
-#######
-
-
 
 sub usage {
     
@@ -60,12 +63,11 @@ return $usage;
 
 }
 
-###############
+###########
 #
 # MAIN
 #
-#############
-
+###########
 
 my $config = &configure(scalar @ARGV);
 
@@ -188,11 +190,11 @@ $pm->wait_all_children;
 
 warnq info_mess."All done";
 
-##########
+###########
 #
 # SUB
 #
-##########
+###########
 
 sub findAnnot {
 
@@ -261,8 +263,6 @@ sub configure {
     $config->{errordir} ||= $config->{outdir}."/error";
     dieq error_mess."Cannot mkdir $config->{errordir}: $!" unless -d $config->{errordir} || mkdir $config->{errordir};
 
-
-
     # check forking: 
     $config->{fork} = 1 unless $config->{fork};
     dieq error_mess."fork must be a number" if $config->{fork} =~ /^\D+$/;
@@ -292,3 +292,6 @@ sub configure {
 
     return $config;
 }
+
+
+1;
