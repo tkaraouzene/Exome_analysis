@@ -28,6 +28,7 @@ perl format_variant.pl [arguments]
 --fork [num_forks]                       # Use forking to improve script runtime (default = 1)
 --verbose                                # Print out a bit more info while running
 --quiet                                  # Shhhhhhh !!!
+--gzip_out                               # compress output files (IO::Compress::Gzip must be installed)
 
 Info : --indir has to be mentionned
        --outdir default = VCF/ (created if doesn\'t exist)
