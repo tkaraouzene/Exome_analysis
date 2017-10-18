@@ -57,17 +57,10 @@ Basic options
 --fork [num_forks]                       # Use forking to improve script runtime (default = 1)
 --verbose                                # print out a bit more info while running
 --quiet                                  # print nothing to STDERR
---gzip_out                               # compress output files (IO::Compress::Gzip must be installed)
 
 Info : --indir has to be mentionned
        --outdir default = VCF/ (created if doesn\'t exist)
        --fork default = 1
-
-    	'errordir|e=s',
-	'indir|i=s',                  # input directory
-	'annot=s',                    # list of kept VEP annotation (default = all)
-	'vep=s',   
-
 
 END
 return $usage;
@@ -106,7 +99,7 @@ while (my $in_file = readdir $vcf_dh) {
     push(@err_files, $config->{errordir}."/".$err_file);
 }
 
-closedir($vcf_dh);
+closedir $vcf_dh;
 
 dieq error_mess."FIX ME!: \@in_files, \@out_files and \@err_files should containes the same nb of element" unless
     (@in_files == @out_files) && (@in_files == @err_files);
@@ -202,25 +195,6 @@ foreach my $index (0..$#in_files) {
 
 $pm->wait_all_children;
 
-
-
-### Compress files if asked
-my $config;
-
-if($config->{gzip_out}) {
-    
-    warnq info_mess."Compressing output files...";
-    
-    foreach my $input (@out_files) {
-    
-	my $output = $input.".gz";
-	gzip $input => $output or dieq error_mess."GZIP failed: $GzipError";
-	unlink($input) or dieq error_mess."cannot remove $input: $!";
-    }
-}
-
-
-
 warnq info_mess."All done";
 
 ###########
@@ -261,7 +235,6 @@ sub configure {
 	'indir|i=s',                  # input directory
 	'annot=s',                    # list of kept VEP annotation (default = all)
 	'vep=s',                      # variant_effect_predictor vcf key (default = "CSQ")
-	'gzip_out',                # compress output files (IO::Compress::Gzip must be installed)
 
     	) or dieq error_mess."unexpected options, type -h or --help for help";
 
@@ -323,22 +296,8 @@ sub configure {
     # out files property
     $config->{vcf_ext} = ".vcf";
 
-    # check for gzip option
-    if ($config->{gzip_out}) {
-
-	if (eval { require IO::Compress::Gzip }) {
-
-	    use IO::Compress::Gzip qw(gzip $GzipError);
-	    
-	} else {
-	    
-	    warnq warn_mess."cannot find IO::Compress::Gzip, install it to use --gzip_out";
-	    $config->{gzip_out} = undef;
-	}
-
-    }
-	
     return $config;
 }
+
 
 1;
