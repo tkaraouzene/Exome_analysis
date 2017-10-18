@@ -71,6 +71,16 @@ Info : --indir has to be mentionned
        --fork default = 1
 ```
 
+#### Used settings:
+
+
+##### Novogene 2017:
+
+```bash
+--in_pattern "(P.+)_L(\d)_(\d)" 
+--in_ext .fq.gz
+```
+
 
 ## Directory:
 
