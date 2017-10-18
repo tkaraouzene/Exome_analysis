@@ -106,7 +106,7 @@ while (my $in_file = readdir $vcf_dh) {
     push(@err_files, $config->{errordir}."/".$err_file);
 }
 
-closedir $vcf_dh;
+closedir($vcf_dh);
 
 dieq error_mess."FIX ME!: \@in_files, \@out_files and \@err_files should containes the same nb of element" unless
     (@in_files == @out_files) && (@in_files == @err_files);

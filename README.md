@@ -35,6 +35,22 @@ Info : --indir has to be mentionned
        --fork default = 1
 ```
 
+
+
+### zcat_fastq.pl: 
+
+
+#### Description:
+
+Ce script va chercher l'ensemble des fichiers ayant l'extention .fastq.gz.
+Ensuite, il va effectuer un zcat sur les fichiers d'un même atient (et même strand) 
+mais ayant été séquencés sur différentes lanes.
+Les patterns des fichiers d'input et d'output sont à préciser dans SETTINGS.
+
+#### Usage:
+
+Avant de lancer le programme il est conseillé de l'éditer pour modifier les paramètres (dans SETTINGS) propores à l'analyse.
+
 ## Directory:
 
 ### script:
