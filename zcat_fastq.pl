@@ -63,62 +63,26 @@ return $usage;
 #
 ###########
 
+my $seen_name = {};
+
+## parse arguments
+# store it in config
 my $config = &configure(scalar @ARGV);
-my $fastq_table = {};
+
+
+## Prepare output directory
+warnq info_mess."init out directorie..." unless $config->{quiet};
+&init_outdir($config) or die;
+
 ## Retrieve fastq files
 # Store it in a hash table: 
-# $fastq_files->{fastq_start}->[$strand] = (file1, file2)
-
+# $fastq_files->{fastq_start_strand} = (file1, file2)
 warnq info_mess."Seeking fastq files..." unless $config->{quiet};
+my $fastq_table = &retrieve_input_files($config) or die;
 
-my $in_dh = openDIR($config->{indir});
-
-while (my $in_file = readdir $in_dh) {
-    
-
-    next unless $in_file =~/$config->{in_ext}$/;
-    next unless $in_file =~/$config->{in_pattern}/;
-
-    my $name = $1;
-    my $lane = $2;
-    my $strand = $3;
-
-    push(@{$fastq_table->{$name."_".$strand}}, $config->{indir}."/".$in_file);
-}
-
-closedir($in_dh);
-
-# Prepare output directory
-unless(-d $config->{outdir}) {
-
-    dieq error_mess."cannot mkdir $config->{outdir}: $!" unless mkdir($config->{outdir});
-    warnq info_mess."mkdir $config->{outdir} done successfully";
-}
-
-
-# find last exome nb
+## Find last exome nb
 warnq info_mess."Seeking last exome nb in $config->{outdir}..." unless $config->{quiet};
-
-my $out_dh = openDIR($config->{outdir});
-my $last_exome = 0;
-
-while (my $fastq_file = readdir $out_dh) {
-    
-    next unless $fastq_file =~/$config->{out_ext}$/;
-    
-    dieq error_mess."unexpected fastq format: $fastq_file" unless $fastq_file =~ /^$config->{out_pattern}(\d+)\./;
-
-    my $exome_nb = $1;
-
-    if ($exome_nb > $last_exome) {
-
-	$last_exome = $exome_nb;
-
-    }
-}
-
-# exome nb start
-my $i = $last_exome + 1;
+my $i = &start_exome_nb($config) or die;
 
 # start to zcat
 warnq info_mess."Start to zcat files..." unless $config->{quiet};
@@ -128,17 +92,29 @@ my $pm = new Parallel::ForkManager($config->{fork}); # job number
 
 foreach my $run (sort(keys %$fastq_table)) {
 
+    warnq info_mess."processing $run" if $config->{verbose};
+
     dieq error_mess."unexpected run format: $run" unless $run =~ /^(.+)_(\d)$/;
 
     my $name = $1;
     my $strand = $2;
-    
-    # change exome nb
-    my $nb = &exome_nb($i) or die;
+    my $nb;
 
-    my $out_file = $config->{outdir}."/".$config->{out_pattern}.$nb.".R".$strand.".".$config->{out_ext};
+    if ($seen_name->{$name}) {
+
+	$nb = $seen_name->{$name};
+
+    } else {
+	
+        # change exome nb
+	$nb = &exome_nb($i) or die;
+	$seen_name->{$name} = $nb;
+	$i++;
+    }
+
+    my $out_file = $config->{outdir}."/".$config->{out_pattern}.$nb.".R".$strand.$config->{out_ext};
     my $cmd = "zcat @{$fastq_table->{$run}} | gzip -c > $out_file";
-    $i++;
+
     $pm->start && next;
     
     `$cmd`;
@@ -168,6 +144,7 @@ sub configure {
         $config,
     	'help|h',                   # print usage
     	'verbose|v',                # print out a bit more info while running
+	'fork=i',                   # nb job
     	'quiet|q',                  # print nothing to STDERR
     	'outdir|o=s',               # output directory
 	'indir|i=s',                # input directory
@@ -221,13 +198,108 @@ sub configure {
     return $config;
 }
 
+sub init_outdir {
 
+    my $config = shift;
+    my $status = 1;
+   
+    unless(-d $config->{outdir}) {
+	
+	dieq error_mess."cannot mkdir $config->{outdir}: $!" unless mkdir($config->{outdir});
+	warnq info_mess."mkdir $config->{outdir} done successfully" if $config->{verbose};
+	
+    } else {
+	
+	# todo check writting right here
+	
+	warnq info_mess."$config->{outdir} exists" if $config->{verbose};
+    
+    }
 
+    return $status;
+}
 
+sub retrieve_input_files {
+    
+    ##
+    # Browse input directory 
+    # Retrieve all files having in_ext (basically .fastq.gz)
+    # and in_pattern.
+    # Files frome with same name and same strand but different lane
+    # nb are stored in a hash table:  
+    # $fastq_table->{$name."_".$strand} = (file1, file2)
+    # Return hash table ref
+    ##
 
+    my $config = shift;
+    my $fastq_table = {};
 
+    my $in_dh = openDIR($config->{indir});
+    my $nb_files;
 
+    while (my $in_file = readdir $in_dh) {
+    
+	next unless $in_file =~/$config->{in_ext}$/;
+	next unless $in_file =~/$config->{in_pattern}/;
 
+	$nb_files++;
+
+	my $name = $1;
+	my $lane = $2;
+	my $strand = $3;
+	push(@{$fastq_table->{$name."_".$strand}}, $config->{indir}."/".$in_file);
+    }
+
+    closedir($in_dh);
+
+    if ($nb_files) {
+	
+	warnq warn_mess."$nb_files files matching with --pattern and --in_ext found in $config->{indir}"
+	    if $config->{verbose};
+
+    } else {
+	
+	warnq warn_mess."0 files matching with --pattern and --in_ext found in $config->{indir}"
+	    unless $config->{quiet};
+    }    
+
+    return $fastq_table;
+
+}
+
+sub start_exome_nb {
+
+    my $config = shift;
+    my $out_dh = openDIR($config->{outdir});
+    my $last_exome = 0;
+    my $start_nb;
+
+    while (my $fastq_file = readdir $out_dh) {
+    
+	next unless $fastq_file =~/$config->{out_ext}$/;
+    
+	unless ($fastq_file =~ /^$config->{out_pattern}(\d+)\./) {
+	    
+	    warnq error_mess."unexpected fastq format: $fastq_file" unless $config->{quiet};
+	    return;
+	}
+
+	my $exome_nb = $1;
+
+	if ($exome_nb > $last_exome) {
+
+	    $last_exome = $exome_nb;
+
+	}
+    }
+
+    # exome nb start
+    $start_nb = $last_exome + 1;
+
+    warnq info_mess."starting new serie from exome n°$start_nb" if $config->{verbose};
+
+    return $start_nb;
+}
 
 sub exome_nb {
 
