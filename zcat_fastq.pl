@@ -64,7 +64,6 @@ return $usage;
 #
 ###########
 
-warn &header(); 
 
 my $seen_name = {};
 
@@ -72,6 +71,11 @@ my $seen_name = {};
 # store it in config
 my $config = &configure(scalar @ARGV);
 
+# Print a very cute cat in STDERR
+warn &header() unless $config->{quiet}; 
+
+# Print settings in STDERR 
+warn &cmd($config) unless $config->{quiet};
 
 ## Prepare output directory
 warnq info_mess."init out directorie..." unless $config->{quiet};
@@ -201,6 +205,24 @@ sub configure {
     return $config;
 }
 
+sub cmd {
+
+    my $config = shift;
+    my $cmd = "####\n## Settings:\n##\n";
+
+    foreach my $setting (sort(keys %$config)) {
+
+	
+	$cmd .= "## --$setting = $config->{$setting}\n"
+
+    }
+
+    $cmd .= "##\n####\n\n";
+
+    return $cmd;
+}
+
+
 sub init_outdir {
 
     my $config = shift;
@@ -257,7 +279,7 @@ sub retrieve_input_files {
 
     if ($nb_files) {
 	
-	warnq warn_mess."$nb_files files matching with --pattern and --in_ext found in $config->{indir}"
+	warnq info_mess."$nb_files files matching with --pattern and --in_ext found in $config->{indir}"
 	    if $config->{verbose};
 
     } else {
