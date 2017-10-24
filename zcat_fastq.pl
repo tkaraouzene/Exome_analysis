@@ -47,6 +47,7 @@ Basic options
 --in_ext                                 # input file extention (default = .fastq.gz) 
 --out_pattern                            # output file name pattern (default = grex)
 --out_ext                                # output file extention (default = .fastq.gz) 
+--exome_start                            # force to start numerotation at this stage
 
 
 Info : --indir has to be mentionned
@@ -126,8 +127,6 @@ $pm->wait_all_children;
 
 warnq info_mess."All done" unless $config->{quiet};
 
-
-
 ###########
 #
 # SUB
@@ -152,6 +151,7 @@ sub configure {
 	'in_ext=s',                 # input file extention (default = .fastq.gz) 
 	'out_pattern=s',            # output file name pattern (default = grex)
 	'out_ext=s',                # output file extention (default = .fastq.gz) 
+	'exome_start=i',            # force to start numerotation at this stage
 
     	) or dieq error_mess."unexpected options, type -h or --help for help";
 
@@ -293,10 +293,26 @@ sub start_exome_nb {
 	}
     }
 
-    # exome nb start
-    $start_nb = $last_exome + 1;
 
-    warnq info_mess."starting new serie from exome n°$start_nb" if $config->{verbose};
+    if ($config->{exome_start}) {
+	
+	if ($last_exome < $config->{exome_start}) {
+
+	    $start_nb = $config->{exome_start};
+
+	} else {
+
+	    my $start = $last_exome + 1;
+	    warnq error_mess."You cannot start exome numerotation before ".$start." change --exome_start parameter";
+	}
+    
+    } else {
+
+	# exome nb start
+	$start_nb = $last_exome + 1;
+    }
+
+    warnq info_mess."starting new serie from exome n°$start_nb" if $start_nb && $config->{verbose};
 
     return $start_nb;
 }

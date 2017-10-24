@@ -66,6 +66,7 @@ perl zcat_fastq.pl [arguments]
 --in_ext                                 # input file extention (default = .fastq.gz) 
 --out_pattern                            # output file name pattern (default = grex)
 --out_ext                                # output file extention (default = .fastq.gz) 
+--exome_start                            # force to start numerotation at this stage
 
 Info : --indir has to be mentionned
        --fork default = 1
