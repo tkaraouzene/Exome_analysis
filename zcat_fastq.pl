@@ -119,7 +119,8 @@ foreach my $run (sort(keys %$fastq_table)) {
     $pm->start && next;
     
     `$cmd`;
-    
+    warnq info_mess."$run done" if $config->{verbose};
+
     $pm->finish;
 }
 
