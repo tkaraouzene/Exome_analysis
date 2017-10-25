@@ -55,6 +55,7 @@ Basic options
 --config_technology                      # Illumina, SoLID...
 --config_platform                        # Sequencing center
 --config_capture                         # exome capture kit
+--config_file_name                       # name of output config file
 
 Info : --indir has to be mentionned
        --fork default = 1
@@ -220,6 +221,8 @@ sub configure {
 	'config_technology=s',      # Illumina, SoLID...
 	'config_platform=s',        # Sequencing center
 	'config_capture=s',         # exome capture kit
+	'config_file_name=s',         # name of output config file
+
 
     	) or dieq error_mess."unexpected options, type -h or --help for help";
 
@@ -263,6 +266,9 @@ sub configure {
     $config->{out_pattern} ||= "grexome";
     $config->{out_ext} = ".fastq.gz";
 	
+
+    $config->{config_file_name} ||= "my_config";
+
     return $config;
 }
 
@@ -445,7 +451,7 @@ sub init_config {
 
 
      my $config = shift;
-     my $config_file = $config->{outdir_final}."/test.config";
+     my $config_file = $config->{outdir_final}."/".$config->{config_file_name}.".config";
      my $config_header = "#patientID	familyID	motherID	fatherID	specimenID	grexomeID	instrument	technology	platform	capture";
      
      my $config_fh = openOUT $config_file;

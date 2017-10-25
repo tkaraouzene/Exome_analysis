@@ -68,12 +68,14 @@ perl zcat_fastq.pl [arguments]
 --out_ext                                # output file extention (default = .fastq.gz) 
 --exome_start                            # force to start numerotation at this stage
 --test_pattern                           # Print name, strand and lane and die
+--split_dir [n]                          # split output fils into n dir
 
 --config_only                            # print config file and nothing else
 --config_instrument                      # used sequencer
 --config_technology                      # Illumina, SoLID...
 --config_platform                        # Sequencing center
 --config_capture                         # exome capture kit
+--config_file_name                       # name of output config file
 
 Info : --indir has to be mentionned
        --fork default = 1
