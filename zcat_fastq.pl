@@ -13,6 +13,7 @@
 ###########
 
 use lib 'script';
+use lib 'local_lib';
 
 use warnings;
 use strict;
