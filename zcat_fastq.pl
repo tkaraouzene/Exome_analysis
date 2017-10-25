@@ -101,6 +101,17 @@ foreach my $run (sort(keys %$fastq_table)) {
 
     warnq info_mess."processing $run" if $config->{verbose};
 
+
+    # for run having more than 1 files per strand per lane
+    # skip then for the moment 
+    # need to zcat them manually
+
+    if (@{$fastq_table->{$run}} > 2) {
+
+	warnq warn_mess."More than 2 files for $run: @{$fastq_table->{$run}}, skiping it...";
+	next;
+    }
+	
     dieq error_mess."unexpected run format: $run" unless $run =~ /^(.+)_(\d)$/;
 
     my $name = $1;
@@ -269,9 +280,10 @@ sub retrieve_input_files {
 
 	$nb_files++;
 
-	my $name = $1;
+	my $name = uc($1);
 	my $lane = $2;
 	my $strand = $3;
+
 	push(@{$fastq_table->{$name."_".$strand}}, $config->{indir}."/".$in_file);
     }
 
