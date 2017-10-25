@@ -39,13 +39,12 @@ Basic options
 -o | --outdir [dir]                      # Output directory (default = fastq)
 -i | --indir [dir]                       # Directory containing input VCF files 
 -p | --in_pattern                        # input fastq file quoted pattern regexp  (name/lane/strand must be saved)
---out_pattern                            # output file name pattern (default = grex)
+--out_pattern                            # output file name pattern (default = grexome)
 --fork [num_forks]                       # Use forking to improve script runtime (default = 1)
 --verbose                                # print out a bit more info while running
 --quiet                                  # print nothing to STDERR
 
 --in_ext                                 # input file extention (default = .fastq.gz) 
---out_pattern                            # output file name pattern (default = grex)
 --out_ext                                # output file extention (default = .fastq.gz) 
 --exome_start                            # force to start numerotation at this stage
 --test_pattern                           # Print name, strand and lane and die
@@ -134,7 +133,9 @@ foreach my $run (sort(keys %$fastq_table)) {
 	$nb = &exome_nb($i) or die;
 	$seen_name->{$name} = $nb;
 	$config->{exome_id} = $config->{out_pattern}.$nb;
-	$config->{name} = $name;
+	$config->{id} = "P".$nb;
+	$config->{fam} = "FAM".$nb;
+	$config->{specimen} = $name;
 	print $config_fh &config_line($config);
 
 	$i++;
@@ -183,7 +184,7 @@ sub configure {
 	'indir|i=s',                # input directory
 	'in_pattern|p=s',           # input fastq file pattern regexp
 	'in_ext=s',                 # input file extention (default = .fastq.gz) 
-	'out_pattern=s',            # output file name pattern (default = grex)
+	'out_pattern=s',            # output file name pattern (default = grexome)
 	'out_ext=s',                # output file extention (default = .fastq.gz) 
 	'exome_start=i',            # force to start numerotation at this stage
 	'test_pattern',             # Print name, strand and lane and die
@@ -233,7 +234,7 @@ sub configure {
     $config->{in_ext} ||= ".fastq.gz";
 
     # out files property
-    $config->{out_pattern} ||= "grex";
+    $config->{out_pattern} ||= "grexome";
     $config->{out_ext} = ".fastq.gz";
 	
     return $config;
@@ -431,13 +432,12 @@ sub init_config {
 sub config_line {
 
     my $config = shift;
-
     my $config_line;
-    $config_line .= $config->{name};
+    $config_line .= $config->{id};
+    $config_line .= "\t".$config->{fam};
     $config_line .= "\t"."";
     $config_line .= "\t"."";
-    $config_line .= "\t"."";
-    $config_line .= "\t"."";
+    $config_line .= "\t".$config->{specimen};
     $config_line .= "\t".$config->{exome_id};
     $config_line .= "\t".$config->{config_instrument};
     $config_line .= "\t".$config->{config_technology};
