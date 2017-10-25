@@ -78,7 +78,7 @@ Info : --indir has to be mentionned
 ##### Novogene 2017:
 
 ```bash
---in_pattern "(P.+)_L(\d)_(\d)" 
+--in_pattern "P([^_]+).+_L(\d)_(\d)" 
 --in_ext .fq.gz
 ```
 
