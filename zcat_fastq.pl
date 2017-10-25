@@ -131,11 +131,12 @@ foreach my $run_index (0..$#all_runs) {
 	    ## Init config file
 	    $config_fh = &init_config($config) or die;
 
-	} else {
+	} 
+
+    } else {
 
 	    $config->{outdir_final} = $config->{outdir}
 	}
-    }
 
     if ($seen_name->{$run}) {
 
