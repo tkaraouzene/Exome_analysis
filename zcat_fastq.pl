@@ -170,7 +170,6 @@ foreach my $run_index (0..$#all_runs) {
 
     	    my $cmd = &define_cmd($config) or next;
 	    
-    	    print $cmd."\n";
     	    `$cmd`;
     	}
 	
