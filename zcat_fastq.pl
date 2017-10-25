@@ -49,7 +49,7 @@ Basic options
 --out_ext                                # output file extention (default = .fastq.gz) 
 --exome_start                            # force to start numerotation at this stage
 --test_pattern                           # Print name, strand and lane and die
-
+--split_dir [n]                          # split output fils into n dir
 --config_only                            # print config file and nothing else
 --config_instrument                      # used sequencer
 --config_technology                      # Illumina, SoLID...
@@ -69,7 +69,6 @@ return $usage;
 # MAIN
 #
 ###########
-
 
 my $seen_name = {};
 
@@ -97,62 +96,87 @@ my $fastq_table = &retrieve_input_files($config) or die;
 warnq info_mess."Seeking last exome nb in $config->{outdir}..." unless $config->{quiet};
 my $i = &start_exome_nb($config) or die;
 
-## Init config file
-my $config_fh = &init_config($config) or die;
-
 # start to zcat
 warnq info_mess."Start to zcat files..." unless $config->{quiet};
 warnq info_mess."$config->{fork} job(s) is(are) running" if $config->{verbose};
 
 my $pm = new Parallel::ForkManager($config->{fork}); # job number
+my @all_runs = sort(keys %$fastq_table);
+my $dir_nb = 0;
+my $config_fh;
 
-foreach my $run (sort(keys %$fastq_table)) {
+foreach my $run_index (0..$#all_runs) {
 
-    # for run having more than 1 files per strand per lane
-    # skip then for the moment 
-    # need to zcat them manually
-    if (@{$fastq_table->{$run}} > 2) {
-
-	warnq warn_mess."More than 2 files for $run, skiping it...";
-	next;
-    }
-	
-    dieq error_mess."unexpected run format: $run" unless $run =~ /^(.+)_(\d)$/;
-
-    my $name = $1;
-    my $strand = $2;
+    my $run = $all_runs[$run_index];
+    my $nb_r1_files = @{$fastq_table->{$run}->{1}};
+    my $nb_r2_files = @{$fastq_table->{$run}->{2}};
     my $nb;
+    
+    if ($nb_r1_files != $nb_r2_files) {
 
-    if ($seen_name->{$name}) {
+	warnq warn_mess."$run: Different nb of files for R1 and R2, skiping it..."; 
+	next;
 
-	$nb = $seen_name->{$name};
+    }
 
+    if ($config->{split_dir}) {
+	
+	if ($run_index % $config->{split_dir} == 0) {
+
+	    $dir_nb++;
+	    $config->{outdir_final} = $config->{outdir}."/bash_".$dir_nb;
+	    dieq error_mess."cannot mkdir $config->{outdir_final}: $!" unless -d $config->{outdir_final} || mkdir($config->{outdir_final});
+	    close $config_fh if $config_fh;
+	    ## Init config file
+	    $config_fh = &init_config($config) or die;
+
+	} else {
+
+	    $config->{outdir_final} = $config->{outdir}
+	}
+    }
+
+    if ($seen_name->{$run}) {
+
+    	$nb = $seen_name->{$run};
+	
     } else {
 	
-        # change exome nb
-	$nb = &exome_nb($i) or die;
-	$seen_name->{$name} = $nb;
-	$config->{exome_id} = $config->{out_pattern}.$nb;
-	$config->{id} = "P".$nb;
-	$config->{fam} = "FAM".$nb;
-	$config->{specimen} = $name;
-	print $config_fh &config_line($config);
+    	# change exome nb
+    	$nb = &exome_nb($i) or die;
+    	$seen_name->{$run} = $nb;
+    	$config->{exome_id} = $config->{out_pattern}.$nb;
+    	$config->{id} = "P".$nb;
+    	$config->{fam} = "FAM".$nb;
+    	$config->{specimen} = $run;
+    	print $config_fh &config_line($config) ;
 
-	$i++;
+    	$i++;
     }
-    
+
     unless ($config->{config_only}) {
 	
-	$pm->start && next;
+    	$pm->start && next;
 
-	warnq info_mess."processing $run" if $config->{verbose};
-
-        my $out_file = $config->{outdir}."/".$config->{exome_id}.".R".$strand.$config->{out_ext};
-	my $cmd = "zcat @{$fastq_table->{$run}} | gzip -c > $out_file";
-        `$cmd`;
-	warnq info_mess."$run done" if $config->{verbose};
+    	warnq info_mess."processing $run" if $config->{verbose};
 	
-	$pm->finish;
+
+    	foreach my $strand (sort(keys %{$fastq_table->{$run}})) {
+    	    warnq info_mess."processing $run, strand $strand" if $config->{verbose};
+
+    	    @{$config->{strand_files}} = sort(@{$fastq_table->{$run}->{$strand}});
+    	    $config->{out_file} =  $config->{outdir_final}."/".$config->{exome_id}.".R".$strand.$config->{out_ext};
+
+    	    my $cmd = &define_cmd($config) or next;
+	    
+    	    print $cmd."\n";
+    	    `$cmd`;
+    	}
+	
+    	warnq info_mess."$run done" if $config->{verbose};
+
+
+    	$pm->finish;
     }
 }
 
@@ -182,6 +206,8 @@ sub configure {
     	'quiet|q',                  # print nothing to STDERR
     	'outdir|o=s',               # output directory
 	'indir|i=s',                # input directory
+	'split_dir=i',              # split output fils into n dir
+
 	'in_pattern|p=s',           # input fastq file pattern regexp
 	'in_ext=s',                 # input file extention (default = .fastq.gz) 
 	'out_pattern=s',            # output file name pattern (default = grexome)
@@ -316,7 +342,7 @@ sub retrieve_input_files {
 
 	} else {
 
-	    push(@{$fastq_table->{$name."_".$strand}}, $config->{indir}."/".$in_file);
+	    push(@{$fastq_table->{$name}->{$strand}}, $config->{indir}."/".$in_file);
     
 	}
 
@@ -419,12 +445,14 @@ sub init_config {
 
 
      my $config = shift;
-     my $config_file = $config->{outdir}."/test.config";
+     my $config_file = $config->{outdir_final}."/test.config";
      my $config_header = "#patientID	familyID	motherID	fatherID	specimenID	grexomeID	instrument	technology	platform	capture";
      
      my $config_fh = openOUT $config_file;
      
      print $config_fh $config_header."\n";
+     
+     $config->{config_fh} = $config_fh;
 
      return $config_fh;
 }
@@ -447,6 +475,36 @@ sub config_line {
 
     return $config_line;
 
+}
+
+sub define_cmd {
+    
+
+    my $config = shift;
+    my @files = @{$config->{strand_files}};
+    my $cmd;
+
+
+    
+
+    if (@files == 1) {
+
+	$cmd = "cp $files[0] $config->{out_file}";
+    
+    } elsif (@files == 2) {
+
+	$cmd = "zcat @files | gzip -c >$config->{out_file}";
+
+    } else {
+	
+	# for run having more than 1 files per strand per lane
+	# skip then for the moment 
+	# need to zcat them manually
+	warnq warn_mess."More than 2 files for $config->{specimen}, skiping it...";
+
+    }
+
+    return $cmd;
 }
 
 sub header {
