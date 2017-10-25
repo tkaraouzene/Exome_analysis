@@ -48,7 +48,7 @@ Basic options
 --out_pattern                            # output file name pattern (default = grex)
 --out_ext                                # output file extention (default = .fastq.gz) 
 --exome_start                            # force to start numerotation at this stage
-
+--test_pattern                           # Print name, strand and lane and die
 
 Info : --indir has to be mentionned
        --fork default = 1
@@ -170,6 +170,7 @@ sub configure {
 	'out_pattern=s',            # output file name pattern (default = grex)
 	'out_ext=s',                # output file extention (default = .fastq.gz) 
 	'exome_start=i',            # force to start numerotation at this stage
+	'test_pattern',             # Print name, strand and lane and die
 
     	) or dieq error_mess."unexpected options, type -h or --help for help";
 
@@ -268,7 +269,7 @@ sub retrieve_input_files {
     ##
 
     my $config = shift;
-    my $fastq_table = {};
+    my $fastq_table;
 
     my $in_dh = openDIR($config->{indir});
     my $nb_files;
@@ -284,8 +285,20 @@ sub retrieve_input_files {
 	my $lane = $2;
 	my $strand = $3;
 
-	push(@{$fastq_table->{$name."_".$strand}}, $config->{indir}."/".$in_file);
-    }
+
+	if ($config->{test_pattern}) {
+
+	    print "$in_file :: name = $name, lane = $lane, strand = $strand\n";
+
+
+	} else {
+
+	    push(@{$fastq_table->{$name."_".$strand}}, $config->{indir}."/".$in_file);
+    
+	}
+
+
+}
 
     closedir($in_dh);
 

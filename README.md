@@ -67,6 +67,7 @@ perl zcat_fastq.pl [arguments]
 --out_pattern                            # output file name pattern (default = grex)
 --out_ext                                # output file extention (default = .fastq.gz) 
 --exome_start                            # force to start numerotation at this stage
+--test_pattern                           # Print name, strand and lane and die
 
 Info : --indir has to be mentionned
        --fork default = 1
