@@ -18,10 +18,10 @@ use warnings;
 use strict;
 
 use feature qw(say);
-use Parallel::ForkManager;
+# use Parallel::ForkManager;
 use Getopt::Long;
 
-use my_warnings qw(printq warnq dieq info_mess error_mess warn_mess);
+use my_warnings qw(printq warnq dieq info_mess get_time error_mess warn_mess);
 use my_file_manager qw(openDIR openIN openOUT close_files);
 
 
@@ -97,18 +97,15 @@ my $fastq_table = &retrieve_input_files($config) or die;
 warnq info_mess."Seeking last exome nb in $config->{outdir}..." unless $config->{quiet};
 my $i = &start_exome_nb($config) or die;
 
+## Init config file
+my $config_fh = &init_config($config) or die;
+
 # start to zcat
 warnq info_mess."Start to zcat files..." unless $config->{quiet};
 warnq info_mess."$config->{fork} job(s) is(are) running" if $config->{verbose};
 
-my $pm = new Parallel::ForkManager($config->{fork}); # job number
+# my $pm = new Parallel::ForkManager($config->{fork}); # job number
 
-my $config_file = $config->{outdir}."/aaaaa.config";
-my $config_fh = openOUT $config_file;
-
-my $config_header = "#patientID	familyID	motherID	fatherID	specimenID	grexomeID	instrument	technology	platform	capture";
-
-print $config_fh $config_header."\n";
 
 foreach my $run (sort(keys %$fastq_table)) {
 
@@ -145,7 +142,7 @@ foreach my $run (sort(keys %$fastq_table)) {
     
     unless ($config->{config_only}) {
 	
-	$pm->start && next;
+#	$pm->start && next;
 
 	warnq info_mess."processing $run" if $config->{verbose};
 
@@ -154,13 +151,14 @@ foreach my $run (sort(keys %$fastq_table)) {
         `$cmd`;
 	warnq info_mess."$run done" if $config->{verbose};
 	
-	$pm->finish;
+#	$pm->finish;
     }
 }
 
-$pm->wait_all_children;
+# $pm->wait_all_children;
 
 close $config_fh;
+
 warnq info_mess."All done" unless $config->{quiet};
 
 ###########
@@ -414,6 +412,20 @@ sub exome_nb {
     }
 
     return $nb;
+}
+
+sub init_config {
+
+
+     my $config = shift;
+     my $config_file = $config->{outdir}."/test.config";
+     my $config_header = "#patientID	familyID	motherID	fatherID	specimenID	grexomeID	instrument	technology	platform	capture";
+     
+     my $config_fh = openOUT $config_file;
+     
+     print $config_fh $config_header."\n";
+
+     return $config_fh;
 }
 
 sub config_line {
