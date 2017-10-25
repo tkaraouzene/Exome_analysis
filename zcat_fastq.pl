@@ -18,7 +18,7 @@ use warnings;
 use strict;
 
 use feature qw(say);
-# use Parallel::ForkManager;
+use Parallel::ForkManager;
 use Getopt::Long;
 
 use my_warnings qw(printq warnq dieq info_mess get_time error_mess warn_mess);
@@ -103,8 +103,7 @@ my $config_fh = &init_config($config) or die;
 warnq info_mess."Start to zcat files..." unless $config->{quiet};
 warnq info_mess."$config->{fork} job(s) is(are) running" if $config->{verbose};
 
-# my $pm = new Parallel::ForkManager($config->{fork}); # job number
-
+my $pm = new Parallel::ForkManager($config->{fork}); # job number
 
 foreach my $run (sort(keys %$fastq_table)) {
 
@@ -143,7 +142,7 @@ foreach my $run (sort(keys %$fastq_table)) {
     
     unless ($config->{config_only}) {
 	
-#	$pm->start && next;
+	$pm->start && next;
 
 	warnq info_mess."processing $run" if $config->{verbose};
 
@@ -152,11 +151,11 @@ foreach my $run (sort(keys %$fastq_table)) {
         `$cmd`;
 	warnq info_mess."$run done" if $config->{verbose};
 	
-#	$pm->finish;
+	$pm->finish;
     }
 }
 
-# $pm->wait_all_children;
+$pm->wait_all_children;
 
 close $config_fh;
 
