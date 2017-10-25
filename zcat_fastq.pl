@@ -50,6 +50,12 @@ Basic options
 --exome_start                            # force to start numerotation at this stage
 --test_pattern                           # Print name, strand and lane and die
 
+--config_only                            # print config file and nothing else
+--config_instrument                      # used sequencer
+--config_technology                      # Illumina, SoLID...
+--config_platform                        # Sequencing center
+--config_capture                         # exome capture kit
+
 Info : --indir has to be mentionned
        --fork default = 1
 
@@ -97,18 +103,21 @@ warnq info_mess."$config->{fork} job(s) is(are) running" if $config->{verbose};
 
 my $pm = new Parallel::ForkManager($config->{fork}); # job number
 
+my $config_file = $config->{outdir}."/aaaaa.config";
+my $config_fh = openOUT $config_file;
+
+my $config_header = "#patientID	familyID	motherID	fatherID	specimenID	grexomeID	instrument	technology	platform	capture";
+
+print $config_fh $config_header."\n";
+
 foreach my $run (sort(keys %$fastq_table)) {
-
-    warnq info_mess."processing $run" if $config->{verbose};
-
 
     # for run having more than 1 files per strand per lane
     # skip then for the moment 
     # need to zcat them manually
-
     if (@{$fastq_table->{$run}} > 2) {
 
-	warnq warn_mess."More than 2 files for $run: @{$fastq_table->{$run}}, skiping it...";
+	warnq warn_mess."More than 2 files for $run, skiping it...";
 	next;
     }
 	
@@ -127,22 +136,31 @@ foreach my $run (sort(keys %$fastq_table)) {
         # change exome nb
 	$nb = &exome_nb($i) or die;
 	$seen_name->{$name} = $nb;
+	$config->{exome_id} = $config->{out_pattern}.$nb;
+	$config->{name} = $name;
+	print $config_fh &config_line($config);
+
 	$i++;
     }
-
-    my $out_file = $config->{outdir}."/".$config->{out_pattern}.$nb.".R".$strand.$config->{out_ext};
-    my $cmd = "zcat @{$fastq_table->{$run}} | gzip -c > $out_file";
-
-    $pm->start && next;
     
-    `$cmd`;
-    warnq info_mess."$run done" if $config->{verbose};
+    unless ($config->{config_only}) {
+	
+	$pm->start && next;
 
-    $pm->finish;
+	warnq info_mess."processing $run" if $config->{verbose};
+
+        my $out_file = $config->{outdir}."/".$config->{exome_id}.".R".$strand.$config->{out_ext};
+	my $cmd = "zcat @{$fastq_table->{$run}} | gzip -c > $out_file";
+        `$cmd`;
+	warnq info_mess."$run done" if $config->{verbose};
+	
+	$pm->finish;
+    }
 }
 
 $pm->wait_all_children;
 
+close $config_fh;
 warnq info_mess."All done" unless $config->{quiet};
 
 ###########
@@ -171,6 +189,12 @@ sub configure {
 	'out_ext=s',                # output file extention (default = .fastq.gz) 
 	'exome_start=i',            # force to start numerotation at this stage
 	'test_pattern',             # Print name, strand and lane and die
+
+	'config_only',              # print config file and nothing else
+	'config_instrument=s',      # used sequencer
+	'config_technology=s',      # Illumina, SoLID...
+	'config_platform=s',        # Sequencing center
+	'config_capture=s',         # exome capture kit
 
     	) or dieq error_mess."unexpected options, type -h or --help for help";
 
@@ -392,6 +416,26 @@ sub exome_nb {
     return $nb;
 }
 
+sub config_line {
+
+    my $config = shift;
+
+    my $config_line;
+    $config_line .= $config->{name};
+    $config_line .= "\t"."";
+    $config_line .= "\t"."";
+    $config_line .= "\t"."";
+    $config_line .= "\t"."";
+    $config_line .= "\t".$config->{exome_id};
+    $config_line .= "\t".$config->{config_instrument};
+    $config_line .= "\t".$config->{config_technology};
+    $config_line .= "\t".$config->{config_platform};
+    $config_line .= "\t".$config->{config_capture};
+    $config_line .= "\n";    
+
+    return $config_line;
+
+}
 
 sub header {
     

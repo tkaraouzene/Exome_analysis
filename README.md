@@ -69,6 +69,12 @@ perl zcat_fastq.pl [arguments]
 --exome_start                            # force to start numerotation at this stage
 --test_pattern                           # Print name, strand and lane and die
 
+--config_only                            # print config file and nothing else
+--config_instrument                      # used sequencer
+--config_technology                      # Illumina, SoLID...
+--config_platform                        # Sequencing center
+--config_capture                         # exome capture kit
+
 Info : --indir has to be mentionned
        --fork default = 1
 ```
