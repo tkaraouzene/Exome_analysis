@@ -103,8 +103,17 @@ warnq info_mess."$config->{fork} job(s) is(are) running" if $config->{verbose};
 
 my $pm = new Parallel::ForkManager($config->{fork}); # job number
 my @all_runs = sort(keys %$fastq_table);
-my $dir_nb = 0;
 my $config_fh;
+
+
+## Init config file
+
+unless ($config->{split_dir}) {
+
+    $config_fh = &init_config($config) or die;
+
+}
+
 
 foreach my $run_index (0..$#all_runs) {
 
@@ -123,9 +132,8 @@ foreach my $run_index (0..$#all_runs) {
     if ($config->{split_dir}) {
 	
 	if ($run_index % $config->{split_dir} == 0) {
-
-	    $dir_nb++;
-	    $config->{outdir_final} = $config->{outdir}."/batch_".$dir_nb;
+	    $config->{batch_nb}++;
+	    $config->{outdir_final} = $config->{outdir}."/batch_".$config->{batch_nb};
 	    dieq error_mess."cannot mkdir $config->{outdir_final}: $!" unless -d $config->{outdir_final} || mkdir($config->{outdir_final});
 	    close $config_fh if $config_fh;
 	    ## Init config file
@@ -443,8 +451,13 @@ sub init_config {
 
 
      my $config = shift;
-     my $config_file = $config->{outdir_final}."/".$config->{config_file_name}.".config";
-     my $config_header = "#patientID	familyID	motherID	fatherID	specimenID	grexomeID	instrument	technology	platform	capture";
+     my $config_file;
+
+     $config_file = $config->{outdir_final}."/".$config->{config_file_name};
+     $config_file .= $config->{batch_nb} if $config->{batch_nb};
+     $config_file .= ".config";
+     my $config_header = join("\t", "#patientID", "familyID", "motherID", "fatherID", "specimenID", 
+			      "grexomeID", "instrument", "technology", "platform", "capture");
      
      my $config_fh = openOUT $config_file;
      
