@@ -77,10 +77,92 @@ Info : --indir has to be mentionned
 
 ##### Novogene 2017:
 
+
+25/10/2017: 20h41
+
+###### CMD:
+
+on luke server:
+
 ```bash
---in_pattern "(P.+)_L(\d)_(\d)" 
---in_ext .fq.gz
+pwd
 ```
+
+```bash
+/home/karaout/analyses
+```
+---
+
+```bash
+
+oarsub -l /nodes=1/core=12,walltime=06:00:00 --project dnaseq_wes \
+       "perl zcat_fastq.pl -i input_novogene_2017 \
+      		    -o demultiplex_novogene_2017 \
+		    -p \"P([^_]+).+_L(\d)_(\d)\" \
+		    --in_ext .fq.gz \
+		    --verbose \
+		    --exome_start 50 \
+		    --split_dir 12 \
+		    --fork 12 \
+		    --config_instrument HiseqX \
+		    --config_technology Illumina \
+		    --config_platform Novogene \
+		    --config_capture Agilent_v6 \
+		    --config_file_name novogene_2017 \
+		    2>demultiplex_novogene_2017/171015_zcat_fastq.log"
+```
+
+
+###### NOTE
+
+```bash
+ls -l --b=M  OAR.3635802.std* | cut -d " " -f5
+```
+
+```bash 
+0M
+0M
+```
+
+Ok OAR.3635802.stderr and OAR.3635802.stdout are empty, good thing
+
+---
+
+```bash
+grep ERROR demultiplex_novogene_2017/171015_zcat_fastq.log
+```
+```bash
+
+```
+
+No error, good...
+
+---
+
+```bash
+grep WARNING demultiplex_novogene_2017/171015_zcat_fastq.log
+```
+
+```
+2017-10-25 20:48:32 - WARNING!: (main::define_cmd): More than 2 files for 12IF017, skiping it...
+2017-10-25 20:48:32 - WARNING!: (main::define_cmd): More than 2 files for 12IF017, skiping it...
+2017-10-25 21:36:22 - WARNING!: (main::define_cmd): More than 2 files for 15IF051, skiping it...
+2017-10-25 21:36:22 - WARNING!: (main::define_cmd): More than 2 files for 15IF051, skiping it...
+```
+
+Ok, like I knew, their are more than one files perl strand per lane for these two run,
+I need to launch it manually...
+
+
+
+
+
+
+
+
+
+
+
 
 
 ## Directory:

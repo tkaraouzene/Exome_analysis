@@ -209,14 +209,7 @@ sub cmd {
 
     my $config = shift;
     my $cmd = "####\n## Settings:\n##\n";
-
-    foreach my $setting (sort(keys %$config)) {
-
-	
-	$cmd .= "## --$setting = $config->{$setting}\n"
-
-    }
-
+    $cmd .= "## --$_ = $config->{$_}\n" foreach (sort(keys %$config));
     $cmd .= "##\n####\n\n";
 
     return $cmd;
@@ -236,8 +229,7 @@ sub init_outdir {
     } else {
 	
 	# todo check writting right here
-	
-	warnq info_mess."$config->{outdir} exists" if $config->{verbose};
+	warnq info_mess."directory: $config->{outdir} already exists" if $config->{verbose};
     
     }
 
