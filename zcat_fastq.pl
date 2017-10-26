@@ -454,7 +454,7 @@ sub init_config {
      my $config_file;
 
      $config_file = $config->{outdir_final}."/".$config->{config_file_name};
-     $config_file .= $config->{batch_nb} if $config->{batch_nb};
+     $config_file .= "_".$config->{batch_nb} if $config->{batch_nb};
      $config_file .= ".config";
      my $config_header = join("\t", "#patientID", "familyID", "motherID", "fatherID", "specimenID", 
 			      "grexomeID", "instrument", "technology", "platform", "capture");
