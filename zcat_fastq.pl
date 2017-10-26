@@ -125,7 +125,7 @@ foreach my $run_index (0..$#all_runs) {
 	if ($run_index % $config->{split_dir} == 0) {
 
 	    $dir_nb++;
-	    $config->{outdir_final} = $config->{outdir}."/bash_".$dir_nb;
+	    $config->{outdir_final} = $config->{outdir}."/batch_".$dir_nb;
 	    dieq error_mess."cannot mkdir $config->{outdir_final}: $!" unless -d $config->{outdir_final} || mkdir($config->{outdir_final});
 	    close $config_fh if $config_fh;
 	    ## Init config file

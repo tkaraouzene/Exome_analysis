@@ -159,7 +159,9 @@ lrt demultiplex_novogene_2017/bash_*/grexome*R1* |wc -l & lrt demultiplex_novoge
 135
 135
 ```
+
 R1 and R2 output files are only present for 135/137 patient...  
+
 ---
 
 ```bash
@@ -175,6 +177,7 @@ grep WARNING demultiplex_novogene_2017/171015_zcat_fastq.log
 
 Ok, like I knew, their are more than one files perl strand per lane for these two run,
 I need to launch it manually for 12IF017 and 15IF051...
+
 
 
 
