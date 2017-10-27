@@ -116,12 +116,14 @@ unless ($config->{split_dir}) {
 
 
 foreach my $run_index (0..$#all_runs) {
+    
+    $config->{run_index} = $run_index;
 
-    my $run = $all_runs[$run_index];
+    my $run = $all_runs[$config->{run_index}];
     my $nb_r1_files = @{$fastq_table->{$run}->{1}};
     my $nb_r2_files = @{$fastq_table->{$run}->{2}};
     my $nb;
-    
+
     if ($nb_r1_files != $nb_r2_files) {
 
 	warnq warn_mess."$run: Different nb of files for R1 and R2, skiping it..."; 
@@ -129,22 +131,7 @@ foreach my $run_index (0..$#all_runs) {
 
     }
 
-    if ($config->{split_dir}) {
-	
-	if ($run_index % $config->{split_dir} == 0) {
-	    $config->{batch_nb}++;
-	    $config->{outdir_final} = $config->{outdir}."/batch_".$config->{batch_nb};
-	    dieq error_mess."cannot mkdir $config->{outdir_final}: $!" unless -d $config->{outdir_final} || mkdir($config->{outdir_final});
-	    close $config_fh if $config_fh;
-	    ## Init config file
-	    $config_fh = &init_config($config) or die;
-
-	} 
-
-    } else {
-
-	    $config->{outdir_final} = $config->{outdir}
-	}
+    &define_final_out_dir($config) or die;
 
     if ($seen_name->{$run}) {
 
@@ -459,7 +446,7 @@ sub init_config {
      my $config_header = join("\t", "#patientID", "familyID", "motherID", "fatherID", "specimenID", 
 			      "grexomeID", "instrument", "technology", "platform", "capture");
      
-     my $config_fh = openOUT $config_file;
+     my $config_fh = openOUT($config_file);
      
      print $config_fh $config_header."\n";
      
@@ -486,6 +473,37 @@ sub config_line {
 
     return $config_line;
 
+}
+
+sub define_final_out_dir {
+
+    $config = shift;
+    my $status = 1; 
+
+    if ($config->{split_dir}) {
+	
+	if ($config->{run_index} % $config->{split_dir} == 0) {
+	    $config->{batch_nb}++;
+	    $config->{outdir_final} = $config->{outdir}."/batch_".$config->{batch_nb};
+
+	    unless (-d $config->{outdir_final} || mkdir($config->{outdir_final})) {
+
+		warnq error_mess."cannot mkdir $config->{outdir_final}: $!";
+		$status = undef;
+	    }
+
+	    close $config_fh if $config_fh;
+	    ## Init config file
+	    $config_fh = &init_config($config) or $status = undef;
+
+	} 
+	
+    } else {
+	
+	$config->{outdir_final} = $config->{outdir}
+    }
+
+    return $status;
 }
 
 sub define_cmd {
