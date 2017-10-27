@@ -156,7 +156,6 @@ foreach my $run_index (0..$#all_runs) {
     	$pm->start && next;
 
     	warnq info_mess."processing $run" if $config->{verbose};
-	
 
     	foreach my $strand (sort(keys %{$fastq_table->{$run}})) {
     	    warnq info_mess."processing $run, strand $strand" if $config->{verbose};
@@ -170,7 +169,6 @@ foreach my $run_index (0..$#all_runs) {
     	}
 	
     	warnq info_mess."$run done" if $config->{verbose};
-
 
     	$pm->finish;
     }
