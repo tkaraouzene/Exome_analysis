@@ -5,10 +5,8 @@
 
 ###########
 #
-# Ce script va chercher l'ensemble des fichiers ayant l'extention .fastq.gz.
-# Ensuite, il va effectuer un zcat sur les fichiers d'un même atient (et même strand) 
-# mais ayant été séquencés sur différentes lanes.
-# Les patterns des fichiers d'input et d'output sont à préciser dans SETTINGS.
+# The goal of this script is to concatenate all fastq files 
+# of a same patient sequenced on same strand (forward or revers)
 # 
 ###########
 
@@ -24,7 +22,6 @@ use Getopt::Long;
 
 use my_warnings qw(printq warnq dieq info_mess get_time error_mess warn_mess);
 use my_file_manager qw(openDIR openIN openOUT close_files);
-
 
 sub usage {
     
@@ -72,30 +69,39 @@ return $usage;
 ###########
 
 my $seen_name = {};
+my $config_fh;
 
 ## parse arguments
-# store it in config
+# store it in $config
 my $config = &configure(scalar @ARGV);
 
-# Print a very cute cat in STDERR
+# Return a very cute cat
 warn &header() unless $config->{quiet}; 
 
-# Print settings in STDERR 
-warn &cmd($config) unless $config->{quiet};
+# Retrun a string containing all args and its value 
+warn &args_to_string($config) unless $config->{quiet};
 
 ## Prepare output directory
 warnq info_mess."init out directorie..." unless $config->{quiet};
 &init_outdir($config) or die;
 
-## Retrieve fastq files
-# Store it in a hash table: 
-# $fastq_files->{fastq_start_strand} = (file1, file2)
+## Retrieve input files:
+#
+# Browse --indir ad seek all files
+# Return $fastq_table:
+#   . $fastq_table->{$name}->{$strand} = [file1, ... , fileN]
+#   . Where:
+#       . $name = patient name
+#       . $strand = sequencing lane 
+#       . N is the nb of used lane to sequence $name
+#
+##
 warnq info_mess."Seeking fastq files..." unless $config->{quiet};
 my $fastq_table = &retrieve_input_files($config) or die;
 
 ## Find last exome nb
 warnq info_mess."Seeking last exome nb in $config->{outdir}..." unless $config->{quiet};
-my $i = &start_exome_nb($config) or die;
+&start_exome_nb($config) or die;
 
 # start to zcat
 warnq info_mess."Start to zcat files..." unless $config->{quiet};
@@ -103,17 +109,13 @@ warnq info_mess."$config->{fork} job(s) is(are) running" if $config->{verbose};
 
 my $pm = new Parallel::ForkManager($config->{fork}); # job number
 my @all_runs = sort(keys %$fastq_table);
-my $config_fh;
-
 
 ## Init config file
-
 unless ($config->{split_dir}) {
 
     $config_fh = &init_config($config) or die;
 
 }
-
 
 foreach my $run_index (0..$#all_runs) {
     
@@ -140,15 +142,14 @@ foreach my $run_index (0..$#all_runs) {
     } else {
 	
     	# change exome nb
-    	$nb = &exome_nb($i) or die;
-    	$seen_name->{$run} = $nb;
-    	$config->{exome_id} = $config->{out_pattern}.$nb;
-    	$config->{id} = "P".$nb;
-    	$config->{fam} = "FAM".$nb;
-    	$config->{specimen} = $run;
+    	$nb = &format_exome_nb($config) or die;
+	$config->{exome_id} = $config->{out_pattern}.$nb;
+	$config->{id} = "P".$nb;
+	$config->{fam} = "FAM".$nb;
+	$config->{specimen} = $run;
     	print $config_fh &config_line($config) ;
-
-    	$i++;
+	$config->{exome_nb}++;
+    	$seen_name->{$run} = $nb;
     }
 
     unless ($config->{config_only}) {
@@ -158,13 +159,10 @@ foreach my $run_index (0..$#all_runs) {
     	warnq info_mess."processing $run" if $config->{verbose};
 
     	foreach my $strand (sort(keys %{$fastq_table->{$run}})) {
+
     	    warnq info_mess."processing $run, strand $strand" if $config->{verbose};
 
-    	    @{$config->{strand_files}} = sort(@{$fastq_table->{$run}->{$strand}});
-    	    $config->{out_file} =  $config->{outdir_final}."/".$config->{exome_id}.".R".$strand.$config->{out_ext};
-
-    	    my $cmd = &define_cmd($config) or next;
-	    
+    	    my $cmd = &define_cmd($config) or next;	    
     	    `$cmd`;
     	}
 	
@@ -265,7 +263,7 @@ sub configure {
     return $config;
 }
 
-sub cmd {
+sub args_to_string {
 
     my $config = shift;
     my $cmd = "####\n## Settings:\n##\n";
@@ -299,13 +297,28 @@ sub init_outdir {
 sub retrieve_input_files {
     
     ##
-    # Browse input directory 
-    # Retrieve all files having in_ext (basically .fastq.gz)
-    # and in_pattern.
-    # Files frome with same name and same strand but different lane
-    # nb are stored in a hash table:  
-    # $fastq_table->{$name."_".$strand} = (file1, file2)
-    # Return hash table ref
+    #
+    # 1. Browse --indir ad seek all files matching with 2 conditions:
+    #    . End with --in_ext (basically .fastq.gz)
+    #    . Contain --in_pattern (perl regexp  
+    #
+    # 2. Parse file name according to --in_pattern
+    #    . $1 = patient name
+    #    . $2 = sequencing lane 
+    #    . $3 = sequencing strand
+    # 
+    # 3. Fill $fastq_table:
+    #    If $name has been sequenced on 1 lane: 
+    #       . $fastq_table->{$name}->{$strand} = [file1]
+    #    Else:
+    #       . $fastq_table->{$name}->{$strand} = [file1, ... , fileN]
+    #         Where N is the nb of used lane
+    # 
+    #  4. Return $fastq_table
+    #
+    # NB: If --test_pattern, this function will print name, lane and strand for each patient,
+    #     In this case, $fastq_table is not filled
+    #    
     ##
 
     my $config = shift;
@@ -325,7 +338,6 @@ sub retrieve_input_files {
 	my $lane = $2;
 	my $strand = $3;
 
-
 	if ($config->{test_pattern}) {
 
 	    print "$in_file :: name = $name, lane = $lane, strand = $strand\n";
@@ -336,9 +348,7 @@ sub retrieve_input_files {
 	    push(@{$fastq_table->{$name}->{$strand}}, $config->{indir}."/".$in_file);
     
 	}
-
-
-}
+    }
 
     closedir($in_dh);
 
@@ -354,7 +364,6 @@ sub retrieve_input_files {
     }    
 
     return $fastq_table;
-
 }
 
 sub start_exome_nb {
@@ -363,6 +372,8 @@ sub start_exome_nb {
     my $out_dh = openDIR($config->{outdir});
     my $last_exome = 0;
     my $start_nb;
+    my $status = 1;
+
 
     while (my $fastq_file = readdir $out_dh) {
     
@@ -383,7 +394,6 @@ sub start_exome_nb {
 	}
     }
 
-
     if ($config->{exome_start}) {
 	
 	if ($last_exome < $config->{exome_start}) {
@@ -394,6 +404,7 @@ sub start_exome_nb {
 
 	    my $start = $last_exome + 1;
 	    warnq error_mess."You cannot start exome numerotation before ".$start." change --exome_start parameter";
+	    return;
 	}
     
     } else {
@@ -403,30 +414,32 @@ sub start_exome_nb {
     }
 
     warnq info_mess."starting new serie from exome n°$start_nb" if $start_nb && $config->{verbose};
+    
+    $config->{exome_nb} = $start_nb;
 
-    return $start_nb;
+    return $status;
 }
 
-sub exome_nb {
+sub format_exome_nb {
 
-    my $i = shift;
+    my $config = shift;
     my $nb;
     
-    if ($i >= 9999) {
+    if ($config->{exome_nb} >= 9999) {
 
         warnq error_mess."FIX ME!: nb exome > 999: you need to change your nomenclature";
 	
-    } elsif ($i < 10) {
+    } elsif ($config->{exome_nb} < 10) {
 	
-	$nb = "000".$i;
+	$nb = "000".$config->{exome_nb};
 	
-    } elsif ($i < 100) {
+    } elsif ($config->{exome_nb} < 100) {
 	
-	$nb = "00".$i;
+	$nb = "00".$config->{exome_nb};
     
-    } elsif ($i < 1000) {
+    } elsif ($config->{exome_nb} < 1000) {
 
-	$nb = "0".$i;
+	$nb = "0".$config->{exome_nb};
     }
 
     return $nb;
@@ -506,21 +519,18 @@ sub define_final_out_dir {
 
 sub define_cmd {
     
-
     my $config = shift;
-    my @files = @{$config->{strand_files}};
+    my $out_file = $config->{outdir_final}."/".$config->{exome_id}.".R".$strand.$config->{out_ext};;
     my $cmd;
-
-
-    
+    my @files = sort(@{$fastq_table->{$run}->{$strand}});
 
     if (@files == 1) {
 
-	$cmd = "cp $files[0] $config->{out_file}";
+	$cmd = "cp $files[0] $out_file";
     
     } elsif (@files == 2) {
 
-	$cmd = "zcat @files | gzip -c >$config->{out_file}";
+	$cmd = "zcat @files | gzip -c >$out_file";
 
     } else {
 	
