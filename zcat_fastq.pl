@@ -161,7 +161,7 @@ foreach my $run_index (0..$#all_runs) {
     	foreach my $strand (sort(keys %{$fastq_table->{$run}})) {
 
     	    warnq info_mess."processing $run, strand $strand" if $config->{verbose};
-
+	    $config->{strand} = $strand;
     	    my $cmd = &define_cmd($config) or next;	    
     	    `$cmd`;
     	}
@@ -520,6 +520,8 @@ sub define_final_out_dir {
 sub define_cmd {
     
     my $config = shift;
+    my $strand = $config->{strand};
+    my $run = $config->{specimen};
     my $out_file = $config->{outdir_final}."/".$config->{exome_id}.".R".$strand.$config->{out_ext};;
     my $cmd;
     my @files = sort(@{$fastq_table->{$run}->{$strand}});
