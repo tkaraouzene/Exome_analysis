@@ -36,23 +36,25 @@ Basic options
 --help                                   # Display complet usage and quit 
 -o | --outdir [dir]                      # Output directory (default = fastq)
 -i | --indir [dir]                       # Directory containing input VCF files 
--p | --in_pattern                        # input fastq file quoted pattern regexp  (name/lane/strand must be saved)
---out_pattern                            # output file name pattern (default = grexome)
+-p | --in_pattern                        # Input fastq file quoted pattern regexp  (name/lane/strand must be saved)
+--out_pattern                            # Output file name pattern (default = grexome)
 --fork [num_forks]                       # Use forking to improve script runtime (default = 1)
---verbose                                # print out a bit more info while running
---quiet                                  # print nothing to STDERR
+--verbose                                # Print out a bit more info while running
+--quiet                                  # Print nothing to STDERR
 
---in_ext                                 # input file extention (default = .fastq.gz) 
---out_ext                                # output file extention (default = .fastq.gz) 
---exome_start                            # force to start numerotation at this stage
+--in_ext                                 # Input file extention (default = .fastq.gz) 
+--out_ext                                # Output file extention (default = .fastq.gz) 
+--exome_start                            # Force to start exome numerotation at this stage
+--batch_start                            # Force to start batch numerotation at this stage
+
 --test_pattern                           # Print name, strand and lane and die
---split_dir [n]                          # split output fils into n dir
---config_only                            # print config file and nothing else
---config_instrument                      # used sequencer
+--split_dir [n]                          # Split output fils into n dir
+--config_only                            # Print config file and nothing else
+--config_instrument                      # Used sequencer
 --config_technology                      # Illumina, SoLID...
 --config_platform                        # Sequencing center
---config_capture                         # exome capture kit
---config_file_name                       # name of output config file
+--config_capture                         # Exome capture kit
+--config_file_name                       # Name of output config file
 
 Info : --indir has to be mentionned
        --fork default = 1
@@ -192,27 +194,29 @@ sub configure {
 
     GetOptions(
         $config,
-    	'help|h',                   # print usage
-    	'verbose|v',                # print out a bit more info while running
-	'fork=i',                   # nb job
-    	'quiet|q',                  # print nothing to STDERR
-    	'outdir|o=s',               # output directory
-	'indir|i=s',                # input directory
-	'split_dir=i',              # split output fils into n dir
+    	'help|h',                   # Print usage
+    	'verbose|v',                # Print out a bit more info while running
+	'fork=i',                   # Nb job
+    	'quiet|q',                  # Print nothing to STDERR
+    	'outdir|o=s',               # Output directory
+	'indir|i=s',                # Input directory
+	'split_dir=i',              # Split output fils into n dir
 
-	'in_pattern|p=s',           # input fastq file pattern regexp
-	'in_ext=s',                 # input file extention (default = .fastq.gz) 
-	'out_pattern=s',            # output file name pattern (default = grexome)
-	'out_ext=s',                # output file extention (default = .fastq.gz) 
-	'exome_start=i',            # force to start numerotation at this stage
+	'in_pattern|p=s',           # Input fastq file pattern regexp
+	'in_ext=s',                 # Input file extention (default = .fastq.gz) 
+	'out_pattern=s',            # Output file name pattern (default = grexome)
+	'out_ext=s',                # Output file extention (default = .fastq.gz) 
+	'exome_start=i',            # Force to start numerotation at this stage
+	'batch_start=i',            # Force to start batch numerotation at this stage
+
 	'test_pattern',             # Print name, strand and lane and die
 
 	'config_only',              # print config file and nothing else
-	'config_instrument=s',      # used sequencer
+	'config_instrument=s',      # Used sequencer
 	'config_technology=s',      # Illumina, SoLID...
 	'config_platform=s',        # Sequencing center
 	'config_capture=s',         # exome capture kit
-	'config_file_name=s',         # name of output config file
+	'config_file_name=s',       # name of output config file
 
 
     	) or dieq error_mess."unexpected options, type -h or --help for help";
@@ -260,6 +264,9 @@ sub configure {
 
     $config->{config_file_name} ||= "my_config";
 
+    # determine where to start batch directory numerotation
+    $config->{batch_nb} = ($config->{batch_start}) ? --$config->{batch_start} : 0;
+
     return $config;
 }
 
@@ -300,7 +307,7 @@ sub retrieve_input_files {
     #
     # 1. Browse --indir ad seek all files matching with 2 conditions:
     #    . End with --in_ext (basically .fastq.gz)
-    #    . Contain --in_pattern (perl regexp  
+    #    . Contain --in_pattern (perl regexp)  
     #
     # 2. Parse file name according to --in_pattern
     #    . $1 = patient name

@@ -74,6 +74,46 @@ Info : --indir has to be mentionned
 
 #### Used settings:
 
+##### Integragen 2016: 
+
+###### on luke server:
+
+
+```bash
+pwd
+```
+
+```bash
+/home/karaout/analyses
+```
+---
+
+
+```bash
+
+oarsub -l /nodes=1/core=12,walltime=06:00:00 --project dnaseq_wes \
+       "perl zcat_fastq.pl -i input_integragen_2016 \
+  	    -o demultiplex_all \
+		    -p \"^Sample_([^_]+)_(R)(\d).fastq.gz$\" \
+		    --verbose \
+        --exome_start 269 \
+        --batch_start 21 \
+		    --split_dir 12 \
+		    --fork 12 \
+		    --config_instrument Hiseq4000 \
+		    --config_technology Illumina \
+		    --config_platform Integragen \
+		    --config_capture Agilent_V5 \
+		    --config_file_name batch \
+		    --batch_start 21 \
+		    2>demultiplex_all/171215_zcat_fastq_integragen_2016.log"
+		    
+		    
+		    
+```
+
+
+
 
 ##### Novogene 2017:
 
@@ -111,7 +151,6 @@ oarsub -l /nodes=1/core=12,walltime=06:00:00 --project dnaseq_wes \
 		    --config_file_name novogene_2017 \
 		    2>demultiplex_novogene_2017/171015_zcat_fastq.log"
 ```
-
 
 ###### NOTE
 
