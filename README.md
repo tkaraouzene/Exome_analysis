@@ -74,6 +74,42 @@ Info : --indir has to be mentionned
 
 #### Used settings:
 
+
+##### Genoscope 2014:
+
+
+```bash
+cd /home/karaout/analyses
+```
+
+```bash
+
+oarsub -l /nodes=1/core=12,walltime=06:00:00 --project dnaseq_wes \
+       "perl zcat_fastq.pl \
+        -i input_genoscope_2014 \
+  	    -o demultiplex_all \
+		    -p \"^E487_CP_([^_]+)_(\d)_(\d).+fastq.gz$\" \
+		    --verbose \
+        --exome_start 336 \
+        --batch_start 28 \
+		    --split_dir 12 \
+		    --fork 12 \
+		    --config_instrument Hiseq2000 \
+		    --config_technology Illumina \
+		    --config_platform Genoscope \
+		    --config_capture Agilent_V5 \
+		    --config_file_name batch \
+		    2>demultiplex_all/171219_zcat_fastq_genoscope_2014.log"
+
+```
+
+
+
+
+
+
+
+
 ##### Genoscope 2013:
 
 ```bash
