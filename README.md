@@ -74,17 +74,42 @@ Info : --indir has to be mentionned
 
 #### Used settings:
 
-##### Integragen 2016: 
-
-###### on luke server:
-
+##### Genoscope 2013:
 
 ```bash
-pwd
+cd /home/karaout/analyses
 ```
 
 ```bash
-/home/karaout/analyses
+
+oarsub -l /nodes=1/core=12,walltime=06:00:00 --project dnaseq_wes \
+       "perl zcat_fastq.pl \
+        -i input_genoscope_2013 \
+  	    -o demultiplex_all \
+		    -p \"^G430_CP_([^_]+)_(\d)_(\d).+fastq.gz$\" \
+		    --verbose \
+        --exome_start 306 \
+        --batch_start 25 \
+		    --split_dir 12 \
+		    --fork 12 \
+		    --config_instrument Hiseq2000 \
+		    --config_technology Illumina \
+		    --config_platform Genoscope \
+		    --config_capture Agilent_V5 \
+		    --config_file_name batch \
+		    2>demultiplex_all/171218_zcat_fastq_genoscope_2013.log"
+
+```
+
+
+
+
+
+##### Integragen 2016: 
+
+
+```bash
+cd /home/karaout/analyses
 ```
 ---
 
